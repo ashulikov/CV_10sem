@@ -20,11 +20,12 @@ const long long INF = 1000000000000000;
 
 int main(int argc, char** argv) {
     srand(time(0));
-    // execute program with arguments limg=C:\path\to\left\im0.png rimg=C:\path\to\right\im1.png shift=C:\path\to\shift\map.png mindx=0 mindy=0 iter=1000000 conf=3
+    // execute program with arguments limg=C:\path\to\left\im0.png rimg=C:\path\to\right\im1.png shift=C:\path\to\shift\map.png mindx=0 mindy=0 iter=1000000 conf=3 diam=2
     vector<pair <int, int> > points;
     int minDx, minDy;
     Mat Limg, Rimg, Shift;
-    int confidence = 3;
+    float confidence = 3.;
+    int shift_r = 3;
     int iterations = 1000000;
     for (int i = 1; i < argc; ++i) {
         string tmp = argv[i];
@@ -42,7 +43,10 @@ int main(int argc, char** argv) {
                 iterations = stoi(tmp.substr(5));
                 break;
             case 'c':
-                confidence = stoi(tmp.substr(5));
+                confidence = stof(tmp.substr(5));
+                break;
+            case 'd':
+                shift_r = stoi(tmp.substr(5));
                 break;
             case 'm':
                 if (tmp[1]=='i'&&tmp[4]=='x') minDx = stoi(tmp.substr(6));
@@ -52,19 +56,34 @@ int main(int argc, char** argv) {
     cv::Mat CloneLimg = Limg.clone();
     cv::Mat CloneRimg = Rimg.clone();
 
-    for (int i = confidence; i < Limg.rows - confidence; ++i) {
-        for (int j = confidence; j < Limg.cols - confidence; ++j) {
+    for (int i = shift_r; i < Limg.rows - shift_r; ++i) {
+        for (int j = shift_r; j < Limg.cols - shift_r; ++j) {
             int o = 1;
-            if ((Shift.at<Vec3b>(i, j)[0] == 0) and (Shift.at<Vec3b>(i, j)[1] == 0)) o = 0;
-            for (int ii = -confidence; ii <= confidence; ++ii) {
-                for (int jj = -confidence; jj <= confidence; ++jj) {
+            if ((Shift.at<Vec3b>(i, j)[0] == 0 - minDx) and (Shift.at<Vec3b>(i, j)[1] == 0 - minDy)) o = 0;
+            for (int ii = -shift_r; ii <= shift_r; ++ii) {
+                for (int jj = -shift_r; jj <= shift_r; ++jj) {
                     if (Shift.at<Vec3b>(i, j) != Shift.at<Vec3b>(i + ii, j + jj)) o = 0;
                 }
             }
             if (o) points.pb(mp(i, j));
         }
     }
-
+    /*for (int i = 0; i < points.size(); ++i){
+        CloneLimg.at<Vec3b>(points[i].fi,points[i].se)[0] = 255;
+        CloneLimg.at<Vec3b>(points[i].fi,points[i].se)[1] = 255;
+        CloneLimg.at<Vec3b>(points[i].fi,points[i].se)[2] = 0;
+        CloneRimg.at<Vec3b>(max(0,points[i].fi - Shift.at<Vec3b>(points[i].fi,points[i].se)[1] - minDy),max(0,points[i].se - Shift.at<Vec3b>(points[i].fi,points[i].se)[0] - minDx))[0] = 255;
+        CloneRimg.at<Vec3b>(max(0,points[i].fi - Shift.at<Vec3b>(points[i].fi,points[i].se)[1] - minDy),max(0,points[i].se - Shift.at<Vec3b>(points[i].fi,points[i].se)[0] - minDx))[1] = 255;
+        CloneRimg.at<Vec3b>(max(0,points[i].fi - Shift.at<Vec3b>(points[i].fi,points[i].se)[1] - minDy),max(0,points[i].se - Shift.at<Vec3b>(points[i].fi,points[i].se)[0] - minDx))[2] = 0;
+    }
+    namedWindow( "Display window", WINDOW_AUTOSIZE );
+    imshow( "Display window", CloneLimg );
+    waitKey(0);
+    imwrite("data/left_zones.png", CloneLimg);
+    namedWindow( "Display window", WINDOW_AUTOSIZE );
+    imshow( "Display window", CloneRimg );
+    waitKey(0);
+    imwrite("data/right_zones.png", CloneRimg);*/
     // RANSAC Start
     Matrix3f F_ans;
     int best = 0;
@@ -74,12 +93,12 @@ int main(int argc, char** argv) {
         random_shuffle(indices.begin(), indices.end());
         MatrixXf m(7, 9);
         for (int i = 0; i < 7; ++i) {
-            m(i, 0) = points[indices[i]].se*max(0,points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx);
-            m(i, 1) = points[indices[i]].fi*max(0,points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx);
-            m(i, 2) = max(0,points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx);
-            m(i, 3) = points[indices[i]].se*max(0,points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy);
-            m(i, 4) = points[indices[i]].fi*max(0,points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy);
-            m(i, 5) = max(0,points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy);
+            m(i, 0) = points[indices[i]].se*(points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx);
+            m(i, 1) = points[indices[i]].fi*(points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx);
+            m(i, 2) = points[indices[i]].se - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[0] - minDx;
+            m(i, 3) = points[indices[i]].se*(points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy);
+            m(i, 4) = points[indices[i]].fi*(points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy);
+            m(i, 5) = points[indices[i]].fi - Shift.at<Vec3b>(points[indices[i]].fi, points[indices[i]].se)[1] - minDy;
             m(i, 6) = points[indices[i]].se;
             m(i, 7) = points[indices[i]].fi;
             m(i, 8) = 1;
@@ -89,8 +108,8 @@ int main(int argc, char** argv) {
         const Eigen::MatrixXf V = svd.matrixV();
         Matrix3f F0(3, 3), F1(3, 3);
         for (int i = 0; i < 9; ++i) {
-            F0(i/3, i%3) = V(7, i);
-            F1(i/3, i%3) = V(8, i);
+            F0(i/3, i%3) = V(i, 7);
+            F1(i/3, i%3) = V(i, 8);
         }
         float a3 = F1.determinant();
         float a0 = F0.determinant();
@@ -106,6 +125,7 @@ int main(int argc, char** argv) {
         a1 +=-F0(2,0) * F1(1,1) * F0(0,2) + F1(1,0) * F0(2,1) * F0(0,2) - F0(0,0) * F0(1,2) * F1(2,1) - F0(2,0) * F0(1,1) * F1(0,2);
         a1 += F0(2,0) * F0(0,1) * F1(1,2) - F0(0,0) * F1(1,2) * F0(2,1);
         vector <Matrix3f> F;
+        F.clear();
         if (abs(a3) < 1e-15) {
             F.pb(F1);
         }
@@ -154,10 +174,12 @@ int main(int argc, char** argv) {
             }
             if (inliner > best) {
                 best = inliner;
+                cout << "New best F: " << best*100./points.size() << "%\n";
                 F_ans = F[j];
             }
         }
     }
+    cout << endl << "Fundamental matrix:\n" << F_ans << endl;
     srand(time(0));
     vector<int> indices(points.size());
     iota(indices.begin(), indices.end(), 0);
@@ -170,8 +192,8 @@ int main(int argc, char** argv) {
         float d = abs(Rmult(0)*y(0)+Rmult(1)*y(1)+Rmult(2)*y(2)) / sqrt(Rmult(0) * Rmult(0) + Rmult(1) * Rmult(1));
         if (d<=confidence) {
             j++;
-            circle(Limg,Point(x(0),x(1)), confidence, Scalar(255,0,0), -1, 8);
-            circle(Rimg,Point(y(0),y(1)), confidence, Scalar(255,0,0), -1, 8);
+            circle(Limg,Point(x(0),x(1)), 1, Scalar(255,0,0), -1, 8);
+            circle(Rimg,Point(y(0),y(1)), 1, Scalar(255,0,0), -1, 8);
             int lpoints[4];
             lpoints[0] = -Lmult(2)/Lmult(0);                           //Point(0, -Lmult(2)/Lmult(0));
             lpoints[1] = -Lmult(2)/Lmult(1);                           //Point(-Lmult(2)/Lmult(1), 0);
@@ -209,9 +231,11 @@ int main(int argc, char** argv) {
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Limg );
     waitKey(0);
+    imwrite("data/left_lines.png", Limg);
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Rimg );
     waitKey(0);
+    imwrite("data/right_lines.png", Rimg);
     FullPivLU<MatrixXf> lu(F_ans);
     VectorXf F_null_space = lu.kernel();
     Vector3f e = F_null_space/F_null_space(2);
