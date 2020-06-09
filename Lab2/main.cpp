@@ -20,11 +20,12 @@ const long long INF = 1000000000000000;
 
 int main(int argc, char** argv) {
     srand(time(0));
-    // execute program with arguments limg=C:\path\to\left\im0.png rimg=C:\path\to\right\im1.png shift=C:\path\to\shift\map.png mindx=0 mindy=0 iter=1000000 conf=3
+    // execute program with arguments limg=C:\path\to\left\im0.png rimg=C:\path\to\right\im1.png shift=C:\path\to\shift\map.png mindx=0 mindy=0 iter=1000000 conf=3 diam=2
     vector<pair <int, int> > points;
     int minDx, minDy;
     Mat Limg, Rimg, Shift;
     int confidence = 3;
+    int shift_r = 3;
     int iterations = 1000000;
     for (int i = 1; i < argc; ++i) {
         string tmp = argv[i];
@@ -44,6 +45,9 @@ int main(int argc, char** argv) {
             case 'c':
                 confidence = stoi(tmp.substr(5));
                 break;
+            case 'd':
+                shift_r = stoi(tmp.substr(5));
+                break;
             case 'm':
                 if (tmp[1]=='i'&&tmp[4]=='x') minDx = stoi(tmp.substr(6));
                 if (tmp[1]=='i'&&tmp[4]=='y') minDy = stoi(tmp.substr(6));
@@ -52,12 +56,12 @@ int main(int argc, char** argv) {
     cv::Mat CloneLimg = Limg.clone();
     cv::Mat CloneRimg = Rimg.clone();
 
-    for (int i = confidence; i < Limg.rows - confidence; ++i) {
-        for (int j = confidence; j < Limg.cols - confidence; ++j) {
+    for (int i = shift_r; i < Limg.rows - shift_r; ++i) {
+        for (int j = shift_r; j < Limg.cols - shift_r; ++j) {
             int o = 1;
-            if ((Shift.at<Vec3b>(i, j)[0] == 0) and (Shift.at<Vec3b>(i, j)[1] == 0)) o = 0;
-            for (int ii = -confidence; ii <= confidence; ++ii) {
-                for (int jj = -confidence; jj <= confidence; ++jj) {
+            if ((Shift.at<Vec3b>(i, j)[0] == minDx) and (Shift.at<Vec3b>(i, j)[1] == minDy)) o = 0;
+            for (int ii = -shift_r; ii <= shift_r; ++ii) {
+                for (int jj = -shift_r; jj <= shift_r; ++jj) {
                     if (Shift.at<Vec3b>(i, j) != Shift.at<Vec3b>(i + ii, j + jj)) o = 0;
                 }
             }
@@ -154,6 +158,7 @@ int main(int argc, char** argv) {
             }
             if (inliner > best) {
                 best = inliner;
+                cout << "New best F: " << best*100./points.size() << "%\n";
                 F_ans = F[j];
             }
         }
@@ -206,11 +211,14 @@ int main(int argc, char** argv) {
             line(Rimg,Rp[0],Rp[1],Scalar(0,0,255),1,8);
         }
     }
+    cout << endl << "Fundamental matrix:\n" << F_ans << endl;
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Limg );
     waitKey(0);
+    imwrite("data/left_lines.png", Limg);
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Rimg );
     waitKey(0);
+    imwrite("data/right_lines.png", Rimg);
     return 0;
 }

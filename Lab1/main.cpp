@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
                     graph[i1][i2][i3].clear();
         for (int dx = 0; dx <= maxDx - minDx; ++dx) {
             for (int dy = 0; dy <= maxDy - minDy; ++dy) {
-                graph[0][0][0].pb(mp(mp(dx,dy),0));
+                graph[0][0-minDx][0-minDy].pb(mp(mp(dx,dy),0));
             }
         }
         for (int j = 0; j < Limg.cols; ++j) {
@@ -116,10 +116,10 @@ int main(int argc, char** argv) {
                 for(int i3 = 0; i3 < Dmax; i3++)
                     d[i1][i2][i3] = INF;
         static pair<int, int> parent[2020][Dmax][Dmax];
-        d[0][0][0] = 0;
-        parent[0][0][0] = mp(-1,-1);
+        d[0][0-minDx][0-minDy] = 0;
+        parent[0][0-minDx][0-minDy] = mp(-1,-1);
         priority_queue <pair<float,pair<int,pair<int,int> > > > q;
-        q.push(mp(0, mp(0, mp(0,0))));
+        q.push(mp(0, mp(0, mp(0-minDx,0-minDy))));
         pair<int,pair<int,int> > cur;
         while (!q.empty()) {
             pair<int,pair<int,int> > v = q.top().second;
@@ -141,12 +141,12 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        while (cur.fi >= 0) {
-            cur.se = parent[cur.fi][cur.se.fi][cur.se.se];
-            cur.fi--;
+        while (cur.fi > 0) {
             CloneLimg.at<Vec3b>(i, cur.fi/2)[0] = parent[cur.fi][cur.se.fi][cur.se.se].fi;
             CloneLimg.at<Vec3b>(i, cur.fi/2)[1] = parent[cur.fi][cur.se.fi][cur.se.se].se;
             CloneLimg.at<Vec3b>(i, cur.fi/2)[2] = 0;
+            cur.se = parent[cur.fi][cur.se.fi][cur.se.se];
+            cur.fi--;
             cur.se = parent[cur.fi][cur.se.fi][cur.se.se];
             cur.fi--;
         }

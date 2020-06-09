@@ -212,17 +212,15 @@ int main(int argc, char** argv) {
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Rimg );
     waitKey(0);
-    cout << F_ans << endl;
-    cout << F_ans.determinant() << endl;
     FullPivLU<MatrixXf> lu(F_ans);
     VectorXf F_null_space = lu.kernel();
-    cout << F_null_space << endl;
     Vector3f e = F_null_space/F_null_space(2);
     Vector3f e0 = e/e.norm();
     Vector3f k(0,0,1);
     Vector3f kxe0 = k.cross(e0);
-    cout << kxe0 << endl;
+    kxe0 = kxe0 / kxe0.norm();
     Vector3f kxkxe0 = k.cross(kxe0);
+    kxkxe0 = kxkxe0 / kxkxe0.norm();
     MatrixXf R(3,3);
     R(0,0) = kxkxe0(0);
     R(0,1) = kxkxe0(1);
@@ -233,25 +231,24 @@ int main(int argc, char** argv) {
     R(2,0) = k(0);
     R(2,1) = k(1);
     R(2,2) = k(2);
-    if (R.determinant()!=1) {
+    cout << R << endl;
+    if (R.determinant()<0) {
         R(0,0) = R(0,0) * (-1);
-        R(0,1) = R(0,1) * (-1);
-        R(0,2) = R(0,2) * (-1);
+        R(1,0) = R(1,0) * (-1);
+        R(2,0) = R(2,0) * (-1);
     }
     cout << R << endl;
-    cout << R.determinant() << endl;
     MatrixXf G(3,3);
     G << 1,                      0, 0,
          0,                      1, 0,
          -(R * e)(2)/(R * e)(0), 0, 1;
     MatrixXf GR = G * R;
-    cout << GR.inverse() << endl;
     for (int i = 0; i < Rimg.rows; ++i) {
         for (int j = 0; j < Rimg.cols; ++j){
-            Vector3f y(i, j, 1);
-            Vector3f x = y.transpose() * R.inverse();
-            if ((x(1) >= 0) and (x(1) < Rimg.rows) and (x(0) >= 0) and (x(0) < Rimg.cols)){
-                CloneRimg.at<Vec3b>(i, j) = Rimg.at<Vec3b>(x(1),x(0));
+            Vector3f y(j-(Rimg.cols/2), i-(Rimg.rows/2), 1);
+            Vector3f x = y.transpose()*R.inverse();
+            if ((x(1)+(Rimg.rows/2) >= 0) and (x(1)+(Rimg.rows/2) < Rimg.rows) and (x(0)+(Rimg.cols/2) >= 0) and (x(0)+(Rimg.cols/2) < Rimg.cols)){
+                CloneRimg.at<Vec3b>(i,j) = Rimg.at<Vec3b>(x(1)+(Rimg.rows/2),x(0)+(Rimg.cols/2));
             }
             else {
                 CloneRimg.at<Vec3b>(i, j)[0] = 0;
