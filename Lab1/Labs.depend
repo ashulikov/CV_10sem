@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1591461864 source:c:\users\senya\desktop\5 курс 2 сем\labs\main.cpp
+	<opencv2\highgui\highgui.hpp>
+	<opencv2\opencv.hpp>
+	<opencv2\core\core.hpp>
+	<bits/stdc++.h>
+
+1591563119 source:c:\users\senya\desktop\5kurs2sem\labs\main.cpp
+	<opencv2\highgui\highgui.hpp>
+	<opencv2\opencv.hpp>
+	<opencv2\core\core.hpp>
+	<bits/stdc++.h>
+
+1591629034 source:c:\users\senya\desktop\5kurs2sem\lab1\main.cpp
+	<opencv2\highgui\highgui.hpp>
+	<opencv2\opencv.hpp>
+	<opencv2\core\core.hpp>
+	<bits/stdc++.h>
+
