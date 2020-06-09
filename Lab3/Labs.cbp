@@ -21,7 +21,7 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="limg=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\im0.jpg rimg=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\im1.jpg shift=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\output.png mindx=-20 mindy=-2 iter=1000000 conf=3" />
+				<Option parameters="limg=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\im0.jpg rimg=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\im1.jpg shift=C:\Users\senya\Desktop\5kurs2sem\Lab3\data\output.png mindx=-20 mindy=-2 iter=100000 conf=3" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>

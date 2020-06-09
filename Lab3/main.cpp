@@ -106,10 +106,14 @@ int main(int argc, char** argv) {
         a1 +=-F0(2,0) * F1(1,1) * F0(0,2) + F1(1,0) * F0(2,1) * F0(0,2) - F0(0,0) * F0(1,2) * F1(2,1) - F0(2,0) * F0(1,1) * F1(0,2);
         a1 += F0(2,0) * F0(0,1) * F1(1,2) - F0(0,0) * F1(1,2) * F0(2,1);
         vector <Matrix3f> F;
-        if (abs(a3) < 1e-9) {
+        if (abs(a3) < 1e-15) {
             F.pb(F1);
         }
         else {
+            a0 = a0/a3;
+            a1 = a1/a3;
+            a2 = a2/a3;
+            a3 = 1.;
             float p = (3. * a3 * a1 - a2 * a2) / 3. / a3 / a3;
             float q = (2. * a2 * a2 * a2 - 9. * a3 * a2 * a1 + 27. * a3 * a3 * a0) / 27. / a3 / a3 / a3;
             float Q = p * p * p / 27. + q * q / 4.;
@@ -123,10 +127,17 @@ int main(int argc, char** argv) {
             y[1] = (alpha + beta) / (-2.) + ii * (alpha - beta) * sqrt(3) / 2.;
             y[2] = (alpha + beta) / (-2.) - ii * (alpha - beta) * sqrt(3) / 2.;
             for (int i = 0; i<3; ++i) {
-                if (abs(y[i].imag())<1e-9) {
+                if (abs(y[i].imag())<1e-12) {
                     float x = y[i].real() - a2 / 3. / a3;
                     Matrix3f tmp = x * F1;
-                    F.pb(F0+tmp);
+                    if ((F0+tmp).determinant()!=0) {
+                        Matrix3f A = F0+tmp;
+                        float xx=(A(1,2)*A(0,1) - A(1,1)*A(0,2))/(A(1,0)*A(0,1)-A(1,1)*A(0,0));
+                        float yy=(A(0,2)-A(0,0)*(A(1,2)*A(0,1)-A(1,1)*A(0,2))/(A(1,0)*A(0,1)-A(1,1)*A(0,0)))/A(0,1);
+                        A(2,2) = xx*A(2,0) + yy*A(2,1);
+                        F.pb(A);
+                    }
+                    else F.pb(F0+tmp);
                 }
             }
         }
@@ -201,11 +212,12 @@ int main(int argc, char** argv) {
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", Rimg );
     waitKey(0);
-
-    FullPivLU<MatrixXf> lu(F_ans.transpose());
+    cout << F_ans << endl;
+    cout << F_ans.determinant() << endl;
+    FullPivLU<MatrixXf> lu(F_ans);
     VectorXf F_null_space = lu.kernel();
+    cout << F_null_space << endl;
     Vector3f e = F_null_space/F_null_space(2);
-    cout << e << endl;
     Vector3f e0 = e/e.norm();
     Vector3f k(0,0,1);
     Vector3f kxe0 = k.cross(e0);
@@ -221,7 +233,13 @@ int main(int argc, char** argv) {
     R(2,0) = k(0);
     R(2,1) = k(1);
     R(2,2) = k(2);
+    if (R.determinant()!=1) {
+        R(0,0) = R(0,0) * (-1);
+        R(0,1) = R(0,1) * (-1);
+        R(0,2) = R(0,2) * (-1);
+    }
     cout << R << endl;
+    cout << R.determinant() << endl;
     MatrixXf G(3,3);
     G << 1,                      0, 0,
          0,                      1, 0,
