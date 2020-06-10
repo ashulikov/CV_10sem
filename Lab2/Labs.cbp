@@ -21,7 +21,7 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="limg=data\hangerL-small.png rimg=data\hangerR-small.png shift=C:\Users\senya\Desktop\5kurs2sem\Lab2\data\output_hanger.png mindx=0 mindy=-15 iter=10000 conf=0.1 diam=1" />
+				<Option parameters="limg=data\shapes0.jpg rimg=data\shapes1.jpg shift=data\output.png mindx=0 mindy=-5 iter=100000 conf=1 diam=1" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>

@@ -55,6 +55,8 @@ int main(int argc, char** argv) {
     }
     cv::Mat CloneLimg = Limg.clone();
     cv::Mat CloneRimg = Rimg.clone();
+    cv::Mat CleanLimg = Limg.clone();
+    cv::Mat CleanRimg = Rimg.clone();
 
     for (int i = shift_r; i < Limg.rows - shift_r; ++i) {
         for (int j = shift_r; j < Limg.cols - shift_r; ++j) {
@@ -178,6 +180,7 @@ int main(int argc, char** argv) {
                 F_ans = F[j];
             }
         }
+        if (best*1./points.size()>0.999) break;
     }
     cout << endl << "Fundamental matrix:\n" << F_ans << endl;
     srand(time(0));
@@ -238,12 +241,14 @@ int main(int argc, char** argv) {
     imwrite("data/right_lines.png", Rimg);
     FullPivLU<MatrixXf> lu(F_ans);
     VectorXf F_null_space = lu.kernel();
-    Vector3f e = F_null_space/F_null_space(2);
+    Vector3f e = F_null_space;
+    //e(0) = e(0) - (Rimg.cols/2);
+    //e(1) = e(1) - (Rimg.rows/2);
     Vector3f e0 = e/e.norm();
     Vector3f k(0,0,1);
     Vector3f kxe0 = k.cross(e0);
     kxe0 = kxe0 / kxe0.norm();
-    Vector3f kxkxe0 = k.cross(kxe0);
+    Vector3f kxkxe0 = kxe0.cross(k);
     kxkxe0 = kxkxe0 / kxkxe0.norm();
     MatrixXf R(3,3);
     R(0,0) = kxkxe0(0);
@@ -255,24 +260,20 @@ int main(int argc, char** argv) {
     R(2,0) = k(0);
     R(2,1) = k(1);
     R(2,2) = k(2);
-    cout << R << endl;
-    if (R.determinant()<0) {
-        R(0,0) = R(0,0) * (-1);
-        R(1,0) = R(1,0) * (-1);
-        R(2,0) = R(2,0) * (-1);
-    }
-    cout << R << endl;
+    Vector3f Re = R*e;
     MatrixXf G(3,3);
-    G << 1,                      0, 0,
-         0,                      1, 0,
-         -(R * e)(2)/(R * e)(0), 0, 1;
+    G << 1,            0, 0,
+         0,            1, 0,
+         -Re(2)/Re(0), 0, 1;
     MatrixXf GR = G * R;
     for (int i = 0; i < Rimg.rows; ++i) {
         for (int j = 0; j < Rimg.cols; ++j){
-            Vector3f y(j-(Rimg.cols/2), i-(Rimg.rows/2), 1);
-            Vector3f x = y.transpose()*R.inverse();
-            if ((x(1)+(Rimg.rows/2) >= 0) and (x(1)+(Rimg.rows/2) < Rimg.rows) and (x(0)+(Rimg.cols/2) >= 0) and (x(0)+(Rimg.cols/2) < Rimg.cols)){
-                CloneRimg.at<Vec3b>(i,j) = Rimg.at<Vec3b>(x(1)+(Rimg.rows/2),x(0)+(Rimg.cols/2));
+            Vector3f y(j, i, 1);
+            y(0) = j, y(1) = i, y(2) = 1;
+            Vector3f x = GR.inverse() * y;
+            x = x/x(2);
+            if ((x(1) >= 0) and (x(1) < Rimg.rows) and (x(0) >= 0) and (x(0) < Rimg.cols)){
+                CloneRimg.at<Vec3b>(i,j) = Rimg.at<Vec3b>(x(1),x(0));
             }
             else {
                 CloneRimg.at<Vec3b>(i, j)[0] = 0;
@@ -283,6 +284,68 @@ int main(int argc, char** argv) {
     }
     namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", CloneRimg );
+    imwrite("data/rectified_right.png", CloneRimg);
+    waitKey(0);
+    FullPivLU<MatrixXf> lu2(F_ans.transpose());
+    VectorXf F_null_space2 = lu2.kernel();
+    e = F_null_space2;
+    Matrix3f ex;
+    ex << 0, -e(2), e(1),
+          e(2), 0, -e(0),
+          -e(1), e(0), 0;
+    Matrix3f M_hat = GR * ex * F_ans;
+    Vector3f my(M_hat(1,0), M_hat(1,1), M_hat(1,2));
+    Vector3f mz(M_hat(2,0), M_hat(2,1), M_hat(2,2));
+    Vector3f crossm = (my.transpose()).cross(mz.transpose());
+    Vector3f mx = crossm/-sqrt(crossm.norm());
+    Matrix3f M_apost;
+    M_apost << mx(0), mx(1), mx(2),
+               my(0), my(1), my(2),
+               mz(0), mz(1), mz(2);
+    cout << "M` = \n" << M_apost << endl;
+    FullPivLU<Matrix3f> lu_decomp(M_apost);
+    cout << "rank M` = " << lu_decomp.rank() << endl;
+    MatrixXf LeftP(points.size(),3);
+    VectorXf RightP(points.size());
+    for (int i = 0; i < points.size(); ++i) {
+        Vector3f left_x(points[i].se,points[i].fi,1);
+        Vector3f right_x(points[i].se - Shift.at<Vec3b>(points[i].fi, points[i].se)[0] - minDx, points[i].fi - Shift.at<Vec3b>(points[i].fi, points[i].se)[1] - minDy, 1);
+        Vector3f left_tmp = M_apost * left_x;
+        Vector3f right_tmp = GR * right_x;
+        left_tmp = left_tmp/left_tmp(2);
+        right_tmp = right_tmp/right_tmp(2);
+        RightP(i) = right_tmp(0);
+        for (int j = 0; j < 3; ++j) {
+            LeftP(i, j) = left_tmp(j);
+        }
+    }
+    Vector3f abc = (LeftP.transpose() * LeftP).ldlt().solve(LeftP.transpose() * RightP);
+    Matrix3f Mabc;
+    Mabc << abc(0), abc(1), abc(2),
+            0     , 1     , 0     ,
+            0     , 0     , 1     ;
+    Matrix3f L = Mabc * M_apost;
+    cout << L << endl;
+    cout << L.inverse() << endl;
+    for (int i = 0; i < Limg.rows; ++i) {
+        for (int j = 0; j < Limg.cols; ++j){
+            Vector3f y(j, i, 1);
+            y(0) = j, y(1) = i, y(2) = 1;
+            Vector3f x = L.inverse() * y;
+            x = x/x(2);
+            if ((x(1) >= 0) and (x(1) < Limg.rows) and (x(0) >= 0) and (x(0) < Limg.cols)){
+                CloneLimg.at<Vec3b>(i,j) = Limg.at<Vec3b>(x(1),x(0));
+            }
+            else {
+                CloneLimg.at<Vec3b>(i, j)[0] = 0;
+                CloneLimg.at<Vec3b>(i, j)[1] = 0;
+                CloneLimg.at<Vec3b>(i, j)[2] = 0;
+            }
+        }
+    }
+    namedWindow( "Display window", WINDOW_AUTOSIZE );
+    imshow( "Display window", CloneLimg );
+    imwrite("data/rectified_left.png", CloneLimg);
     waitKey(0);
 	return 0;
 }

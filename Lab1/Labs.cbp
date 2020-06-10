@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="limg=C:\Users\senya\Desktop\5kurs2sem\Lab1\data\im0.jpg rimg=C:\Users\senya\Desktop\5kurs2sem\Lab1\data\im1.jpg alpha=5 beta=10 mindx=-20 maxdx=20 mindy=-2 maxdy=2 g=4 h=2" />
+				<Option parameters="limg=data\shapes0.jpg rimg=data\shapes1.jpg alpha=50 beta=10 mindx=0 maxdx=30 mindy=-5 maxdy=5 g=4 h=2" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -21,7 +21,7 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="limg=C:\Users\senya\Desktop\5kurs2sem\Lab1\data\im0.jpg rimg=C:\Users\senya\Desktop\5kurs2sem\Lab1\data\im1.jpg alpha=1 beta=10 mindx=-40 maxdx=40 mindy=-30 maxdy=30 g=2 h=2" />
+				<Option parameters="limg=data\shapes0.jpg rimg=data\shapes1.jpg alpha=50 beta=10 mindx=0 maxdx=30 mindy=-5 maxdy=5 g=4 h=2" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>

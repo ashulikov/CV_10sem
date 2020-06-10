@@ -178,6 +178,7 @@ int main(int argc, char** argv) {
                 F_ans = F[j];
             }
         }
+        if (best*1./points.size()>0.999) break;
     }
     cout << endl << "Fundamental matrix:\n" << F_ans << endl;
     srand(time(0));
